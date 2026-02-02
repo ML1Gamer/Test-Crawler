@@ -363,7 +363,7 @@ function update() {
             
             const orbitAngle = angleToPlayer + Math.PI / 2 + enemy.wanderAngle;
             
-            if (distToPlayer < 100) {
+            if (distToPlayer < 0) {
                 // Too close, move away while orbiting
                 const retreatAngle = angleToPlayer + Math.PI + enemy.wanderAngle * 0.5;
                 moveX = Math.cos(retreatAngle) * enemy.speed;
