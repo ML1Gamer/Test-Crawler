@@ -19,16 +19,19 @@ function spawnBoss(room) {
 
 // Spawn mini-boss function
 function spawnMiniBoss(type) {
+    const modifier = getDifficultyModifier();
+    
     game.doors.forEach(door => door.blocked = true);
     createMusicLoop('boss_spawn');
     
     if (type === MINIBOSS_TYPES.DASHER) {
+        const baseHealth = 1000 + game.player.level * 100;
         const dasher = {
             x: ROOM_WIDTH / 2,
             y: 150,
             size: 30,
-            health: 1000 + game.player.level * 100,
-            maxHealth: 1000 + game.player.level * 100,
+            health: baseHealth * modifier.enemyHealthMult,
+            maxHealth: baseHealth * modifier.enemyHealthMult,
             speed: 2,
             color: '#ff4500',
             type: ENEMY_TYPES.DASHER,
@@ -45,12 +48,13 @@ function spawnMiniBoss(type) {
         createParticles(dasher.x, dasher.y, '#ff4500', 30);
         playEnemySpawnSound();
     } else if (type === MINIBOSS_TYPES.NECROMANCER) {
+        const baseHealth = 1400 + game.player.level * 140;
         const necromancer = {
             x: ROOM_WIDTH / 2,
             y: 150,
             size: 28,
-            health: 1400 + game.player.level * 140,
-            maxHealth: 1400 + game.player.level * 140,
+            health: baseHealth * modifier.enemyHealthMult,
+            maxHealth: baseHealth * modifier.enemyHealthMult,
             speed: 1.2,
             color: '#800080',
             type: ENEMY_TYPES.NECROMANCER,
@@ -111,12 +115,15 @@ function spawnEnemiesInRoom(room) {
 }
 
 function spawnEnemy(x, y, type) {
+    const modifier = getDifficultyModifier();
+    const baseHealth = 30 + game.player.level * 5;
+    
     const enemy = {
         x: x,
         y: y,
         size: 18,
-        health: 30 + game.player.level * 5,
-        maxHealth: 30 + game.player.level * 5,
+        health: baseHealth * modifier.enemyHealthMult,
+        maxHealth: baseHealth * modifier.enemyHealthMult,
         speed: type === ENEMY_TYPES.SHOOTER ? 0.8 : (type === ENEMY_TYPES.WANDERER ? 1.2 : 1.0),
         color: type === ENEMY_TYPES.SHOOTER ? '#ff6b6b' : (type === ENEMY_TYPES.WANDERER ? '#4ecdc4' : '#95e1d3'),
         type: type,
@@ -129,12 +136,15 @@ function spawnEnemy(x, y, type) {
 
 // Summoned enemy (for necromancer)
 function spawnSummonedEnemy(x, y, type, necromancer) {
+    const modifier = getDifficultyModifier();
+    const baseHealth = 50 + game.player.level * 10;
+    
     const enemy = {
         x: x,
         y: y,
         size: 16,
-        health: 50 + game.player.level * 10,
-        maxHealth: 50 + game.player.level * 10,
+        health: baseHealth * modifier.enemyHealthMult,
+        maxHealth: baseHealth * modifier.enemyHealthMult,
         speed: type === ENEMY_TYPES.SHOOTER ? 0.8 : 1.0,
         color: type === ENEMY_TYPES.SHOOTER ? '#ff99cc' : '#cc99ff',
         type: ENEMY_TYPES.SUMMONED,
@@ -151,6 +161,7 @@ function spawnSummonedEnemy(x, y, type, necromancer) {
 }
 
 function handleEnemyDeath(enemy) {
+    const modifier = getDifficultyModifier();
     const index = game.enemies.indexOf(enemy);
     if (index > -1) {
         game.enemies.splice(index, 1);
@@ -273,8 +284,8 @@ function handleEnemyDeath(enemy) {
             game.player.score += 10;
             createParticles(enemy.x, enemy.y, enemy.color, 15);
             
-            // Normal enemy drops
-            if (Math.random() < 0.4) {
+            // Normal enemy drops - affected by difficulty
+            if (Math.random() < (0.4 * modifier.dropRateMult)) {
                 const moneyAmount = Math.floor(Math.random() * 15) + 5;
                 game.items.push({
                     x: enemy.x,
@@ -285,18 +296,21 @@ function handleEnemyDeath(enemy) {
                 });
             }
             
-            if (Math.random() < 0.15) {
-                const ammoAmount = Math.floor(Math.random() * 20) + 10;
-                game.items.push({
-                    x: enemy.x,
-                    y: enemy.y,
-                    type: 'ammo',
-                    amount: ammoAmount,
-                    size: 12
-                });
+            // Check if ammo should drop (IMPOSSIBLE mode: no ammo from normal enemies)
+            if (!modifier.noNormalEnemyAmmo) {
+                if (Math.random() < (0.15 * modifier.dropRateMult)) {
+                    const ammoAmount = Math.floor(Math.random() * 20) + 10;
+                    game.items.push({
+                        x: enemy.x,
+                        y: enemy.y,
+                        type: 'ammo',
+                        amount: ammoAmount,
+                        size: 12
+                    });
+                }
             }
             
-            if (Math.random() < 0.03) {
+            if (Math.random() < (0.03 * modifier.dropRateMult)) {
                 const droppedWeapon = getRandomWeapon(true);
                 game.items.push({
                     x: enemy.x,
@@ -331,12 +345,14 @@ function updateEnemySpawnIndicators() {
         if (now >= indicator.spawnTime) {
             // Actually spawn the enemy
             if (indicator.isBoss) {
+                const modifier = getDifficultyModifier();
+                const baseHealth = 300 + game.player.level * 50;
                 const boss = {
                     x: indicator.x,
                     y: indicator.y,
                     size: 35,
-                    health: 300 + game.player.level * 50,
-                    maxHealth: 300 + game.player.level * 50,
+                    health: baseHealth * modifier.enemyHealthMult,
+                    maxHealth: baseHealth * modifier.enemyHealthMult,
                     speed: 1.5,
                     color: '#8b0000',
                     type: ENEMY_TYPES.BOSS,
