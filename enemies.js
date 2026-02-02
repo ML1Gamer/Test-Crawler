@@ -27,8 +27,8 @@ function spawnMiniBoss(type) {
             x: ROOM_WIDTH / 2,
             y: 150,
             size: 30,
-            health: 800 + game.player.level * 80,
-            maxHealth: 800 + game.player.level * 80,
+            health: 1000 + game.player.level * 100,
+            maxHealth: 1000 + game.player.level * 100,
             speed: 2,
             color: '#ff4500',
             type: ENEMY_TYPES.DASHER,
@@ -58,7 +58,7 @@ function spawnMiniBoss(type) {
             lastSummon: Date.now(),
             summonCooldown: 5000, // 10 seconds
             minions: [], // Track summoned minions
-            healPerKill: 30
+            healPerKill: 30 + game.player.level * 30
         };
         game.enemies.push(necromancer);
         createParticles(necromancer.x, necromancer.y, '#800080', 30);
