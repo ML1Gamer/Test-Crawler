@@ -13,7 +13,7 @@ const game = {
         angle: 0,
         level: 1,
         score: 0,
-        money: 0,
+        money: 50000000,
         weapons: [],
         currentWeaponIndex: 0,
         hasKey: false,
