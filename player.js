@@ -107,15 +107,39 @@ function dropCurrentWeapon() {
 }
 
 function resetGame() {
-    game.player.health = 100;
-    game.player.maxHealth = 100;
+    const modifier = getDifficultyModifier();
+    
+    // Show death message
+    const deathMessage = confirm(
+        `💀 GAME OVER 💀\n\n` +
+        `Floor Reached: ${game.player.level}\n` +
+        `Score: ${game.player.score}\n` +
+        `Difficulty: ${modifier.displayName}\n\n` +
+        `Click OK to restart or Cancel to quit to menu.`
+    );
+    
+    if (!deathMessage) {
+        // User chose to quit to menu
+        game.paused = false;
+        document.getElementById('overlay').classList.remove('active');
+        document.getElementById('pauseMenu').classList.remove('active');
+        document.getElementById('gameContainer').style.display = 'none';
+        document.getElementById('mainMenu').style.display = 'flex';
+        showMainMenu();
+        stopMusic();
+        return;
+    }
+    
+    // Reset player stats based on difficulty
+    game.player.health = modifier.oneHPMode ? 1 : 100;
+    game.player.maxHealth = modifier.oneHPMode ? 1 : 100;
     game.player.level = 1;
     game.player.score = 0;
     game.player.money = 0;
     game.player.hasKey = false;
     game.player.weapons = [{ ...weaponTypes.melee }, { ...weaponTypes.pistol }];
     game.player.currentWeaponIndex = 1;
-    game.player.speed = 3;
+    game.player.speed = 5;
     game.player.gear = {
         helmet: null,
         vest: null,
@@ -124,5 +148,7 @@ function resetGame() {
         shoes: null,
         ammoType: null
     };
+    
     generateDungeon();
+    updateUI();
 }

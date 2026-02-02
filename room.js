@@ -8,6 +8,7 @@ class Room {
         this.visited = false;
         this.bossRoomUnlocked = false;
         this.miniBossType = null; // For mini-boss rooms
+        this.shopInventory = null; // For shop rooms - stores specific items
         this.doors = {
             north: false,
             south: false,

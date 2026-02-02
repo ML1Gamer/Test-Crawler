@@ -79,7 +79,7 @@ function shoot() {
                     const damage = Math.floor(weapon.damage * stats.damageMult);
                     const bulletSpeed = weapon.bulletSpeed * stats.bulletSpeedMult;
                     
-                    game.bullets.push({
+                    const bullet = {
                         x: game.player.x,
                         y: game.player.y,
                         vx: Math.cos(angle) * bulletSpeed,
@@ -92,7 +92,14 @@ function shoot() {
                         explosionRadius: (weapon.explosionRadius || 0) * stats.explosiveRadiusMult,
                         lifesteal: stats.lifesteal,
                         damageOverTime: stats.damageOverTime
-                    });
+                    };
+                    
+                    game.bullets.push(bullet);
+                    
+                    // Send to multiplayer
+                    if (multiplayer.enabled) {
+                        sendShootEvent(bullet);
+                    }
                 }
             }, burst * weapon.burstDelay);
         }
@@ -112,7 +119,7 @@ function shoot() {
             const damage = Math.floor(weapon.damage * stats.damageMult);
             const bulletSpeed = weapon.bulletSpeed * stats.bulletSpeedMult;
             
-            game.bullets.push({
+            const bullet = {
                 x: game.player.x,
                 y: game.player.y,
                 vx: Math.cos(angle) * bulletSpeed,
@@ -125,7 +132,14 @@ function shoot() {
                 explosionRadius: (weapon.explosionRadius || 0) * stats.explosiveRadiusMult,
                 lifesteal: stats.lifesteal,
                 damageOverTime: stats.damageOverTime
-            });
+            };
+            
+            game.bullets.push(bullet);
+            
+            // Send to multiplayer
+            if (multiplayer.enabled) {
+                sendShootEvent(bullet);
+            }
         }
     }
     

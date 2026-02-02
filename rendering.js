@@ -273,6 +273,43 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Draw other players (multiplayer)
+    if (multiplayer.enabled && multiplayer.players.size > 0) {
+        multiplayer.players.forEach((otherPlayer, playerId) => {
+            // Draw other player
+            ctx.save();
+            ctx.translate(otherPlayer.x, otherPlayer.y);
+            ctx.rotate(otherPlayer.angle);
+            
+            // Different color for other players
+            ctx.fillStyle = '#ff6b9d';
+            ctx.fillRect(-game.player.size/2, -game.player.size/2, game.player.size, game.player.size);
+            
+            ctx.fillStyle = '#333';
+            ctx.fillRect(game.player.size/2 - 5, -3, 15, 6);
+            
+            ctx.restore();
+            
+            // Draw health bar
+            const barWidth = 40;
+            const barHeight = 4;
+            const healthPercent = Math.max(0, Math.min(1, otherPlayer.health / 100));
+            
+            ctx.fillStyle = '#333';
+            ctx.fillRect(otherPlayer.x - barWidth/2, otherPlayer.y - game.player.size - 15, barWidth, barHeight);
+            ctx.fillStyle = '#ff6b9d';
+            ctx.fillRect(otherPlayer.x - barWidth/2, otherPlayer.y - game.player.size - 15, barWidth * healthPercent, barHeight);
+            
+            // Draw weapon name
+            if (otherPlayer.currentWeapon) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(otherPlayer.currentWeapon, otherPlayer.x, otherPlayer.y - game.player.size - 20);
+            }
+        });
+    }
+
     // Draw player
     ctx.save();
     ctx.translate(game.player.x, game.player.y);
