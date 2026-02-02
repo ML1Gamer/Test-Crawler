@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dungeon Crawler RPG - Mini-Boss Edition</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="overlay"></div>
+    <div id="shopMenu">
+        <h2 style="text-align: center; color: #4ecca3; margin-bottom: 20px;">🛒 SHOP 🛒</h2>
+        <div id="shopItems"></div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="closeShop()" style="padding: 10px 30px; background: #e94560; border: none; color: white; border-radius: 5px; cursor: pointer; font-family: 'Courier New', monospace; font-size: 14px;">Close</button>
+        </div>
+    </div>
+    <div id="gameContainer">
+        <div id="ui">
+            <div class="stat">
+                <span>HP:</span>
+                <div class="bar">
+                    <div class="bar-fill" id="healthBar"></div>
+                </div>
+                <span id="healthText">100/100</span>
+            </div>
+            <div class="stat">
+                <span>Floor: <span id="level">1</span></span>
+            </div>
+            <div class="stat">
+                <span>Money: 💰<span id="money">0</span></span>
+            </div>
+            <div class="stat">
+                <span>Enemies: <span id="enemyCount">0</span></span>
+            </div>
+            <div class="stat">
+                <span>Score: <span id="score">0</span></span>
+            </div>
+            <div class="stat">
+                <span id="keyStatus">🔑 No Key</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 100%;">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div id="minimap">
+                    <div style="text-align: center; margin-bottom: 10px; font-weight: bold;">Map</div>
+                    <canvas id="minimapCanvas" width="200" height="200"></canvas>
+                </div>
+                <div id="gearPanel">
+                    <div style="font-weight: bold; margin-bottom: 10px; text-align: center;">⚔️ GEAR ⚔️</div>
+                    <div id="gearList"></div>
+                </div>
+            </div>
+        </div>
+        <div id="inventory">
+            <div style="font-weight: bold; margin-bottom: 10px;">Current Weapon: <span id="currentWeapon">Pistol</span></div>
+            <div id="weaponList"></div>
+        </div>
+        <div id="controls">
+            <strong>Controls:</strong> WASD/Arrow Keys - Move | Mouse - Aim | Hold Click - Shoot | 1-3 - Switch Weapons | E - Interact/Enter Door | Q - Drop Weapon<br>
+            <strong style="color: #ff00ff;">NEW: Mini-Boss Rooms!</strong> Press E at pedestals to summon DASHER ⚡ or NECROMANCER ☠️!<br>
+            Find the KEY 🔑 to unlock the BOSS ROOM 🚪 and proceed to the next floor! Every 5th floor has a BOSS!<br>
+            <small>Slot 1: Melee (∞) | Slots 2-3: Guns with limited ammo | Max 3 weapons total | Money/Health/Ammo auto-pickup, press E for items/doors</small><br>
+            <div style="margin-top: 10px;">
+                <label>Music: <input type="range" id="musicVolume" min="0" max="100" value="30" style="width: 100px;"></label>
+                <label style="margin-left: 15px;">SFX: <input type="range" id="sfxVolume" min="0" max="100" value="40" style="width: 100px;"></label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script defer src="constants.js"></script>
+    <script defer src="data.js"></script>
+    <script defer src="gamestate.js"></script>
+    <script defer src="audio.js"></script>
+    <script defer src="room.js"></script>
+    <script defer src="dungeon.js"></script>
+    <script defer src="enemies.js"></script>
+    <script defer src="items.js"></script>
+    <script defer src="player.js"></script>
+    <script defer src="weapons.js"></script>
+    <script defer src="ui.js"></script>
+    <script defer src="rendering.js"></script>
+    <script defer src="game.js"></script>
+</body>
+</html>
