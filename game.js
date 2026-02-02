@@ -37,6 +37,11 @@ document.addEventListener('mouseup', () => {
     mouseDown = false;
 });
 
+// Delta time tracking for FPS-independent movement
+let lastFrameTime = performance.now();
+const TARGET_FPS = 60;
+const FRAME_TIME = 1000 / TARGET_FPS;
+
 // Collision detection
 function checkCollision(rect1, rect2) {
     return rect1.x < rect2.x + rect2.w &&
@@ -139,9 +144,9 @@ function tryEnterDoor() {
     }
 }
 
-// Main update loop
-function update() {
-    if (game.shopOpen) return;
+// Main update loop with delta time
+function update(deltaTime) {
+    if (game.shopOpen || game.paused) return;
 
     // Update enemy spawn indicators
     updateEnemySpawnIndicators();
@@ -151,7 +156,7 @@ function update() {
     }
 
     const stats = getPlayerStats();
-    const playerSpeed = game.player.speed + stats.speedBonus;
+    const playerSpeed = (game.player.speed + stats.speedBonus) * deltaTime;
 
     let newX = game.player.x;
     let newY = game.player.y;
@@ -172,14 +177,28 @@ function update() {
 
     game.player.angle = Math.atan2(game.mouseY - game.player.y, game.mouseX - game.player.x);
 
+    // Send player update to multiplayer server
+    if (multiplayer.enabled) {
+        sendPlayerUpdate();
+        
+        // Host sends enemy updates
+        if (multiplayer.isHost) {
+            const now = Date.now();
+            if (now - (multiplayer.lastEnemyUpdate || 0) > 100) {
+                sendEnemyUpdate();
+                multiplayer.lastEnemyUpdate = now;
+            }
+        }
+    }
+
     // Auto-pickup nearby items
     pickupNearbyItems();
 
     // Update bullets
     for (let i = game.bullets.length - 1; i >= 0; i--) {
         const bullet = game.bullets[i];
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
+        bullet.x += bullet.vx * deltaTime;
+        bullet.y += bullet.vy * deltaTime;
 
         if (bullet.x < 0 || bullet.x > ROOM_WIDTH || bullet.y < 0 || bullet.y > ROOM_HEIGHT) {
             game.bullets.splice(i, 1);
@@ -225,8 +244,8 @@ function update() {
                 
                 if (!bullet.penetrating) {
                     game.bullets.splice(i, 1);
+                    break;
                 }
-                break;
             }
         }
     }
@@ -234,8 +253,8 @@ function update() {
     // Update enemy bullets
     for (let i = game.enemyBullets.length - 1; i >= 0; i--) {
         const bullet = game.enemyBullets[i];
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
+        bullet.x += bullet.vx * deltaTime;
+        bullet.y += bullet.vy * deltaTime;
 
         if (bullet.x < 0 || bullet.x > ROOM_WIDTH || bullet.y < 0 || bullet.y > ROOM_HEIGHT) {
             game.enemyBullets.splice(i, 1);
@@ -251,59 +270,107 @@ function update() {
         const dist = Math.hypot(bullet.x - game.player.x, bullet.y - game.player.y);
         if (dist < game.player.size) {
             const stats = getPlayerStats();
+            const modifier = getDifficultyModifier();
+            const baseBulletDamage = Math.max(0.5, 2 - (stats.defense * 0.02));
+            const bulletDamage = baseBulletDamage * modifier.enemyDamageMult;
             
-            // Check for evasion
-            if (stats.evasion > 0 && Math.random() < stats.evasion) {
-                createParticles(bullet.x, bullet.y, '#4ecca3', 5);
-                game.enemyBullets.splice(i, 1);
-                continue;
+            if (Math.random() > stats.evasion) {
+                game.player.health -= bulletDamage;
+                createParticles(game.player.x, game.player.y, '#4ecca3', 8);
+                
+                if (game.player.health <= 0) {
+                    resetGame();
+                }
+            } else {
+                createParticles(game.player.x, game.player.y, '#ffffff', 5);
             }
-            
-            const damage = Math.max(1, 5 - Math.floor(stats.defense * 0.1));
-            game.player.health -= damage;
-            createParticles(bullet.x, bullet.y, '#e94560', 5);
-            playPlayerHurtSound();
             game.enemyBullets.splice(i, 1);
-            
-            if (game.player.health <= 0) {
-                resetGame();
-            }
         }
     }
 
-    // Update enemies
+    // Update enemies with delta time
     const now = Date.now();
     game.enemies.forEach(enemy => {
-        const distToPlayer = Math.hypot(game.player.x - enemy.x, game.player.y - enemy.y);
-        
         let moveX = 0;
         let moveY = 0;
+        const distToPlayer = Math.hypot(game.player.x - enemy.x, game.player.y - enemy.y);
 
-        // Mini-boss AI
         if (enemy.type === ENEMY_TYPES.DASHER) {
-            updateDasherAI(enemy);
-            return; // Skip normal movement
+            if (enemy.state === 'idle') {
+                if (now - enemy.lastDash > enemy.dashCooldown) {
+                    enemy.state = 'windup';
+                    enemy.windupTime = now;
+                    
+                    const angleToPlayer = Math.atan2(game.player.y - enemy.y, game.player.x - enemy.x);
+                    enemy.dashDirection = {
+                        x: Math.cos(angleToPlayer),
+                        y: Math.sin(angleToPlayer)
+                    };
+                }
+            } else if (enemy.state === 'windup') {
+                if (now - enemy.windupTime >= enemy.windupDuration) {
+                    enemy.state = 'dashing';
+                    enemy.dashStartTime = now;
+                    playDashSound();
+                }
+            } else if (enemy.state === 'dashing') {
+                const dashElapsed = now - enemy.dashStartTime;
+                if (dashElapsed >= enemy.dashDuration) {
+                    enemy.state = 'cooldown';
+                    enemy.cooldownStartTime = now;
+                    enemy.lastDash = now;
+                } else {
+                    const dashSpeed = enemy.dashSpeed * deltaTime;
+                    const newX = enemy.x + enemy.dashDirection.x * dashSpeed;
+                    const newY = enemy.y + enemy.dashDirection.y * dashSpeed;
+                    
+                    if (!checkWallCollision(newX, enemy.y, enemy.size) && !checkEnemyDoorCollision(newX, enemy.y, enemy.size)) {
+                        enemy.x = newX;
+                    } else {
+                        enemy.state = 'cooldown';
+                        enemy.cooldownStartTime = now;
+                        enemy.lastDash = now;
+                    }
+                    
+                    if (!checkWallCollision(enemy.x, newY, enemy.size) && !checkEnemyDoorCollision(enemy.x, newY, enemy.size)) {
+                        enemy.y = newY;
+                    } else {
+                        enemy.state = 'cooldown';
+                        enemy.cooldownStartTime = now;
+                        enemy.lastDash = now;
+                    }
+                }
+            } else if (enemy.state === 'cooldown') {
+                if (now - enemy.cooldownStartTime >= enemy.postDashCooldown) {
+                    enemy.state = 'idle';
+                }
+            }
         } else if (enemy.type === ENEMY_TYPES.NECROMANCER) {
-            updateNecromancerAI(enemy);
-            // Continue for wall collision checks
+            if (now - enemy.lastSummon > enemy.summonCooldown) {
+                enemy.lastSummon = now;
+                summonEnemy(enemy);
+            }
+            
+            const angleToPlayer = Math.atan2(game.player.y - enemy.y, game.player.x - enemy.x);
+            if (distToPlayer < 250) {
+                moveX = -Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                moveY = -Math.sin(angleToPlayer) * enemy.speed * deltaTime;
+            } else if (distToPlayer > 350) {
+                moveX = Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                moveY = Math.sin(angleToPlayer) * enemy.speed * deltaTime;
+            }
         } else if (enemy.type === ENEMY_TYPES.BOSS) {
             const angleToPlayer = Math.atan2(game.player.y - enemy.y, game.player.x - enemy.x);
             
-            // Boss movement pattern
-            if (distToPlayer < 250) {
-                moveX = -Math.cos(angleToPlayer) * enemy.speed;
-                moveY = -Math.sin(angleToPlayer) * enemy.speed;
-            } else if (distToPlayer > 350) {
-                moveX = Math.cos(angleToPlayer) * enemy.speed;
-                moveY = Math.sin(angleToPlayer) * enemy.speed;
+            if (distToPlayer > 250) {
+                moveX = Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                moveY = Math.sin(angleToPlayer) * enemy.speed * deltaTime;
             }
             
-            // Boss shooting pattern - shoots in bursts
             if (now - enemy.lastShot > 800) {
                 enemy.lastShot = now;
                 const bulletSpeed = 5;
                 
-                // Shoot 3 bullets in a spread
                 for (let i = -1; i <= 1; i++) {
                     const angle = angleToPlayer + (i * 0.2);
                     game.enemyBullets.push({
@@ -323,15 +390,15 @@ function update() {
             if (enemy.actualType === ENEMY_TYPES.CHASER) {
                 const randomOffset = (Math.random() - 0.5) * 1.5;
                 const angle = angleToPlayer + randomOffset;
-                moveX = Math.cos(angle) * enemy.speed;
-                moveY = Math.sin(angle) * enemy.speed;
+                moveX = Math.cos(angle) * enemy.speed * deltaTime;
+                moveY = Math.sin(angle) * enemy.speed * deltaTime;
             } else if (enemy.actualType === ENEMY_TYPES.SHOOTER) {
                 if (distToPlayer < 200) {
-                    moveX = -Math.cos(angleToPlayer) * enemy.speed;
-                    moveY = -Math.sin(angleToPlayer) * enemy.speed;
+                    moveX = -Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                    moveY = -Math.sin(angleToPlayer) * enemy.speed * deltaTime;
                 } else if (distToPlayer > 300) {
-                    moveX = Math.cos(angleToPlayer) * enemy.speed;
-                    moveY = Math.sin(angleToPlayer) * enemy.speed;
+                    moveX = Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                    moveY = Math.sin(angleToPlayer) * enemy.speed * deltaTime;
                 }
                 
                 if (now - enemy.lastShot > 1500 && distToPlayer < 350) {
@@ -351,8 +418,8 @@ function update() {
             const angleToPlayer = Math.atan2(game.player.y - enemy.y, game.player.x - enemy.x);
             const randomOffset = (Math.random() - 0.5) * 1.5;
             const angle = angleToPlayer + randomOffset;
-            moveX = Math.cos(angle) * enemy.speed;
-            moveY = Math.sin(angle) * enemy.speed;
+            moveX = Math.cos(angle) * enemy.speed * deltaTime;
+            moveY = Math.sin(angle) * enemy.speed * deltaTime;
         } else if (enemy.type === ENEMY_TYPES.WANDERER) {
             const angleToPlayer = Math.atan2(game.player.y - enemy.y, game.player.x - enemy.x);
             enemy.wanderTimer++;
@@ -366,27 +433,27 @@ function update() {
             if (distToPlayer < 0) {
                 // Too close, move away while orbiting
                 const retreatAngle = angleToPlayer + Math.PI + enemy.wanderAngle * 0.5;
-                moveX = Math.cos(retreatAngle) * enemy.speed;
-                moveY = Math.sin(retreatAngle) * enemy.speed;
+                moveX = Math.cos(retreatAngle) * enemy.speed * deltaTime;
+                moveY = Math.sin(retreatAngle) * enemy.speed * deltaTime;
             } else if (distToPlayer > 200) {
                 // Too far, move closer while orbiting
                 const approachAngle = angleToPlayer + enemy.wanderAngle * 0.3;
-                moveX = Math.cos(approachAngle) * enemy.speed;
-                moveY = Math.sin(approachAngle) * enemy.speed;
+                moveX = Math.cos(approachAngle) * enemy.speed * deltaTime;
+                moveY = Math.sin(approachAngle) * enemy.speed * deltaTime;
             } else {
                 // Perfect range, orbit around player
-                moveX = Math.cos(orbitAngle) * enemy.speed;
-                moveY = Math.sin(orbitAngle) * enemy.speed;
+                moveX = Math.cos(orbitAngle) * enemy.speed * deltaTime;
+                moveY = Math.sin(orbitAngle) * enemy.speed * deltaTime;
             }
         } else if (enemy.type === ENEMY_TYPES.SHOOTER) {
             const angleToPlayer = Math.atan2(game.player.y - enemy.y, game.player.x - enemy.x);
             
             if (distToPlayer < 200) {
-                moveX = -Math.cos(angleToPlayer) * enemy.speed;
-                moveY = -Math.sin(angleToPlayer) * enemy.speed;
+                moveX = -Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                moveY = -Math.sin(angleToPlayer) * enemy.speed * deltaTime;
             } else if (distToPlayer > 300) {
-                moveX = Math.cos(angleToPlayer) * enemy.speed;
-                moveY = Math.sin(angleToPlayer) * enemy.speed;
+                moveX = Math.cos(angleToPlayer) * enemy.speed * deltaTime;
+                moveY = Math.sin(angleToPlayer) * enemy.speed * deltaTime;
             }
             
             if (now - enemy.lastShot > 1500 && distToPlayer < 350) {
@@ -418,7 +485,9 @@ function update() {
 
         if (distToPlayer < game.player.size + enemy.size) {
             const stats = getPlayerStats();
-            const contactDamage = Math.max(0.1, 0.2 - (stats.defense * 0.005));
+            const modifier = getDifficultyModifier();
+            const baseContactDamage = Math.max(0.1, 0.2 - (stats.defense * 0.005));
+            const contactDamage = baseContactDamage * modifier.enemyDamageMult * deltaTime;
             game.player.health -= contactDamage;
             if (game.player.health <= 0) {
                 resetGame();
@@ -429,9 +498,9 @@ function update() {
     // Update particles
     for (let i = game.particles.length - 1; i >= 0; i--) {
         const p = game.particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
+        p.x += p.vx * deltaTime;
+        p.y += p.vy * deltaTime;
+        p.life -= deltaTime;
         if (p.life <= 0) {
             game.particles.splice(i, 1);
         }
@@ -441,17 +510,29 @@ function update() {
 }
 
 // Apply passive health regeneration
-function applyHealthRegen() {
+function applyHealthRegen(deltaTime) {
+    const modifier = getDifficultyModifier();
+    
+    // No health regen in impossible mode (1 HP cap)
+    if (modifier.oneHPMode) return;
+    
     const stats = getPlayerStats();
     if (stats.healthRegen > 0) {
-        game.player.health = Math.min(game.player.maxHealth, game.player.health + stats.healthRegen * 0.1);
+        game.player.health = Math.min(game.player.maxHealth, game.player.health + stats.healthRegen * 0.1 * deltaTime);
     }
 }
 
-// Game loop
-function gameLoop() {
-    update();
-    applyHealthRegen();
+// Game loop with delta time
+function gameLoop(currentTime) {
+    // Calculate delta time
+    const deltaTime = (currentTime - lastFrameTime) / FRAME_TIME;
+    lastFrameTime = currentTime;
+    
+    // Clamp delta time to prevent huge jumps (e.g., when tab is inactive)
+    const clampedDelta = Math.min(deltaTime, 3);
+    
+    update(clampedDelta);
+    applyHealthRegen(clampedDelta);
     draw();
     requestAnimationFrame(gameLoop);
 }
@@ -488,6 +569,9 @@ function initGame() {
         setSFXVolume(e.target.value / 100);
     });
     
+    // Setup menu volume controls
+    setupVolumeControls();
+    
     // Setup canvas event listeners with proper scaling
     canvas.addEventListener('mousemove', (e) => {
         const coords = getScaledMouseCoordinates(e, canvas);
@@ -503,10 +587,15 @@ function initGame() {
         mouseDown = false;
     });
     
-    // Start the game
-    generateDungeon();
-    updateUI();
-    gameLoop();
+    // Show main menu instead of starting game
+    document.getElementById('mainMenu').style.display = 'flex';
+    document.getElementById('gameContainer').style.display = 'none';
+    
+    // Initialize last frame time
+    lastFrameTime = performance.now();
+    
+    // Start the game loop (but game will be paused until started from menu)
+    requestAnimationFrame(gameLoop);
 }
 
 // Wait for DOM to be ready
