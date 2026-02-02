@@ -9,7 +9,7 @@ const game = {
         size: 20,
         health: 100,
         maxHealth: 100,
-        speed: 3,
+        speed: 5,
         angle: 0,
         level: 1,
         score: 0,
