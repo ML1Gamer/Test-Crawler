@@ -3,6 +3,8 @@ let canvas, ctx, minimapCanvas, minimapCtx;
 
 // Game state
 const game = {
+    difficulty: 'normal',
+    paused: false,
     player: {
         x: 400,
         y: 300,
@@ -13,7 +15,7 @@ const game = {
         angle: 0,
         level: 1,
         score: 0,
-        money: 50000000,
+        money: 0,
         weapons: [],
         currentWeaponIndex: 0,
         hasKey: false,
@@ -45,7 +47,8 @@ const game = {
     gridY: 2,
     visitedRooms: new Set(),
     shopOpen: false,
-    burstQueue: []
+    burstQueue: [],
+    enemySpawnIndicators: []
 };
 
 // Initialize player with melee and pistol
