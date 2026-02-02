@@ -1,5 +1,5 @@
 // Audio System using Web Audio API
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext = null;
 let musicGainNode = null;
 let sfxGainNode = null;
 let currentMusicSource = null;
@@ -7,17 +7,37 @@ let currentMusicType = null;
 
 // Initialize audio nodes
 function initAudio() {
-    musicGainNode = audioContext.createGain();
-    musicGainNode.gain.value = 0.3; // Music volume
-    musicGainNode.connect(audioContext.destination);
-    
-    sfxGainNode = audioContext.createGain();
-    sfxGainNode.gain.value = 0.4; // SFX volume
-    sfxGainNode.connect(audioContext.destination);
+    try {
+        // Create AudioContext on first user interaction
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // Resume if suspended (browsers auto-suspend contexts)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        
+        if (!musicGainNode) {
+            musicGainNode = audioContext.createGain();
+            musicGainNode.gain.value = 0.3; // Music volume
+            musicGainNode.connect(audioContext.destination);
+        }
+        
+        if (!sfxGainNode) {
+            sfxGainNode = audioContext.createGain();
+            sfxGainNode.gain.value = 0.4; // SFX volume
+            sfxGainNode.connect(audioContext.destination);
+        }
+    } catch (e) {
+        console.warn('Audio initialization failed:', e);
+    }
 }
 
 // Sound effect generator functions
 function playShootSound(weapon) {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -72,6 +92,8 @@ function playShootSound(weapon) {
 }
 
 function playExplosionSound() {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     const filter = audioContext.createBiquadFilter();
@@ -95,6 +117,8 @@ function playExplosionSound() {
 }
 
 function playHitSound() {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -112,6 +136,8 @@ function playHitSound() {
 }
 
 function playEnemyDeathSound(isBoss = false) {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -136,6 +162,8 @@ function playEnemyDeathSound(isBoss = false) {
 }
 
 function playPickupSound(type) {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -178,6 +206,8 @@ function playPickupSound(type) {
 }
 
 function playDoorSound() {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -195,6 +225,8 @@ function playDoorSound() {
 }
 
 function playPlayerHurtSound() {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -212,6 +244,8 @@ function playPlayerHurtSound() {
 }
 
 function playEnemySpawnSound() {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -229,6 +263,8 @@ function playEnemySpawnSound() {
 }
 
 function playNoAmmoSound() {
+    if (!audioContext) return;
+    
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -246,6 +282,8 @@ function playNoAmmoSound() {
 
 // Music generation using oscillators
 function createMusicLoop(type) {
+    if (!audioContext) return;
+    
     if (currentMusicSource) {
         stopMusic();
     }
@@ -265,6 +303,8 @@ function createMusicLoop(type) {
 }
 
 function playNormalMusic() {
+    if (!audioContext) return;
+    
     const tempo = 120; // BPM
     const beatDuration = 60 / tempo;
     
@@ -291,6 +331,8 @@ function playNormalMusic() {
 }
 
 function playBossMusic() {
+    if (!audioContext) return;
+    
     const tempo = 140; // Faster tempo
     const beatDuration = 60 / tempo;
     
@@ -332,6 +374,8 @@ function playBossMusic() {
 }
 
 function playShopMusic() {
+    if (!audioContext) return;
+    
     const melody = audioContext.createOscillator();
     const melodyGain = audioContext.createGain();
     
@@ -358,6 +402,8 @@ function playShopMusic() {
 }
 
 function playSafeMusic() {
+    if (!audioContext) return;
+    
     const pad = audioContext.createOscillator();
     const padGain = audioContext.createGain();
     
