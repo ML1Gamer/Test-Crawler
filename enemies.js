@@ -37,7 +37,7 @@ function spawnMiniBoss(type) {
             windupTime: 0,
             dashDirection: { x: 0, y: 0 },
             dashSpeed: 15,
-            windupDuration: 1000, // 1 second windup
+            windupDuration: 300, // 1 second windup
             dashCooldown: 0,
             lastDash: 0
         };
@@ -369,8 +369,8 @@ function updateDasherAI(enemy) {
     
     // Calculate dash cooldown based on health (dash more frequently at low health)
     const healthPercent = enemy.health / enemy.maxHealth;
-    const baseCooldown = 3000; // 3 seconds base
-    const minCooldown = 1000; // 1 second minimum
+    const baseCooldown = 1000; // 3 seconds base
+    const minCooldown = 500; // 1 second minimum
     enemy.dashCooldown = baseCooldown - (baseCooldown - minCooldown) * (1 - healthPercent);
     
     if (enemy.state === 'idle') {
