@@ -39,6 +39,8 @@ const weaponTypes = {
     melee: { name: 'Knife', damage: 15, fireRate: 400, bulletSpeed: 0, color: '#888', spread: 0, ammo: Infinity, range: 80, isMelee: true },
     pistol: { name: 'Pistol', damage: 20, fireRate: 300, bulletSpeed: 8, color: '#888', spread: 0.1, ammo: 60 },
     shotgun: { name: 'Shotgun', damage: 15, fireRate: 700, bulletSpeed: 7, color: '#d4a574', spread: 0.5, bullets: 5, ammo: 250 },
+    g18C: { name: 'Glock18', damage: 10, fireRate: 25, bulletSpeed: 10, color: '#d4a574', spread: 0.4, ammo: 800 },
+    dualPistol: { name: 'DualPistol', damage: 20, fireRate: 300, bulletSpeed: 8, color: '#d4a574', spread: 0.2, burstCount: 2, burstDelay: 150, ammo: 120 },
     doubleBarrelShotgun: { name: 'DoubleBarrel', damage: 15, fireRate: 1400, bulletSpeed: 12, color: '#d4a574', spread: 0.75, bullets: 5, burstCount: 2, burstDelay: 120, ammo: 200 },
     combatShotgun: { name: 'CombatShotgun', damage: 20, fireRate: 1000, bulletSpeed: 10, color: '#d4a574', spread: 0.4, bullets: 20, ammo: 200, canRefill: false },
     rifle: { name: 'Rifle', damage: 25, fireRate: 150, bulletSpeed: 12, color: '#4a4a4a', spread: 0.05, ammo: 120 },
