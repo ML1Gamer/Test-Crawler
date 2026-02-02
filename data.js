@@ -49,7 +49,8 @@ const weaponTypes = {
     famas: { name: 'FAMAS', damage: 22, fireRate: 600, bulletSpeed: 11, color: '#3a5f8f', spread: 0.08, ammo: 90, burstCount: 3, burstDelay: 80 },
     dmr: { name: 'DMR', damage: 60, fireRate: 500, bulletSpeed: 14, color: '#5d4e37', spread: 0.07, ammo: 40 },
     bmg50: { name: '.50 Cal BMG', damage: 200, fireRate: 1800, bulletSpeed: 25, color: '#8b0000', spread: 0, ammo: 25, penetrating: true, canRefill: false },
-    grenadeLauncher: { name: 'Grenade Launcher', damage: 50, fireRate: 1000, bulletSpeed: 6, color: '#2d5016', spread: 0.3, ammo: 15, explosive: true, explosionRadius: 120 }
+    grenadeLauncher: { name: 'Grenade Launcher', damage: 50, fireRate: 1000, bulletSpeed: 6, color: '#2d5016', spread: 0.3, ammo: 15, explosive: true, explosionRadius: 120 },
+    rpg: { name: 'Rocket Launcher', damage: 70, fireRate: 2000, bulletSpeed: 7, color: '#2d5016', spread: 0.05, ammo: 15, explosive: true, explosionRadius: 500 }
 };
 
 function getRandomGear(type) {
