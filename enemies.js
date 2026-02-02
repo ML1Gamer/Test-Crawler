@@ -27,8 +27,8 @@ function spawnMiniBoss(type) {
             x: ROOM_WIDTH / 2,
             y: 150,
             size: 30,
-            health: 400 + game.player.level * 30,
-            maxHealth: 400 + game.player.level * 30,
+            health: 800 + game.player.level * 80,
+            maxHealth: 800 + game.player.level * 80,
             speed: 2,
             color: '#ff4500',
             type: ENEMY_TYPES.DASHER,
@@ -49,14 +49,14 @@ function spawnMiniBoss(type) {
             x: ROOM_WIDTH / 2,
             y: 150,
             size: 28,
-            health: 350 + game.player.level * 25,
-            maxHealth: 350 + game.player.level * 25,
+            health: 1400 + game.player.level * 140,
+            maxHealth: 1400 + game.player.level * 140,
             speed: 1.2,
             color: '#800080',
             type: ENEMY_TYPES.NECROMANCER,
             // Necromancer-specific properties
             lastSummon: Date.now(),
-            summonCooldown: 10000, // 10 seconds
+            summonCooldown: 5000, // 10 seconds
             minions: [], // Track summoned minions
             healPerKill: 30
         };
@@ -133,8 +133,8 @@ function spawnSummonedEnemy(x, y, type, necromancer) {
         x: x,
         y: y,
         size: 16,
-        health: 20 + game.player.level * 3,
-        maxHealth: 20 + game.player.level * 3,
+        health: 50 + game.player.level * 10,
+        maxHealth: 50 + game.player.level * 10,
         speed: type === ENEMY_TYPES.SHOOTER ? 0.8 : 1.0,
         color: type === ENEMY_TYPES.SHOOTER ? '#ff99cc' : '#cc99ff',
         type: ENEMY_TYPES.SUMMONED,
